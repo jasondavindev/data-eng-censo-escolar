@@ -62,7 +62,7 @@ make mkdir dir=/user/hive/warehouse flags="-p"; \
 make mkdir dir=/tmp
 
 # Mova os arquivos para dentro do HDFS
-cd hdfs && make cpFromLocal /tmp/matricula /spark/data/
+cd hdfs && make cpFromLocal source=/tmp/matricula target=/spark/data/
 
 # Suba os outros components
 cd hive && docker-compose up hive-metastore
