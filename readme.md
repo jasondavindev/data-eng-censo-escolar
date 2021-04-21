@@ -50,7 +50,7 @@ Para facilitar, listado os passos para subir o ambiente:
 ```bash
 cd hdfs && docker-compose up
 cd hive && docker-compose up hive-metastore
-cd spark && docker-compose up
+cd spark && docker-compose up && make import_script file=/path/para/arquivo/spark/transform.py # importe o arquivo para HDFS
 cd trino && docker-compose up
 cd airflow && docker-compose up
 ```
