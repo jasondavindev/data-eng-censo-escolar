@@ -3,6 +3,8 @@ from airflow.models import DAG
 from airflow.operators.bash import BashOperator
 from airflow.hooks.webhdfs_hook import WebHDFSHook
 from airflow.operators.python_operator import PythonOperator
+from airflow.contrib.operators.spark_submit_operator import SparkSubmitOperator
+from airflow.hooks.base_hook import BaseHook
 
 CENSO_FILE = "microdados_censo_escolar_2020"
 
@@ -18,6 +20,9 @@ def load_file(destination, source, conn_id='hdfs_http', overwrite=True):
     hook = WebHDFSHook(conn_id)
     hook.load_file(source, destination, overwrite)
 
+def hdfs_conn(conn_id='hdfs'):
+    conn = BaseHook.get_connection(conn_id)
+    return f"hdfs://{conn.host}:{conn.port}"
 
 with DAG(
     dag_id="censo_escolar",
@@ -32,7 +37,7 @@ with DAG(
 
     unzip_file = BashOperator(
         task_id="unzip_file",
-        bash_command=f"unzip -o /tmp/{CENSO_FILE}.zip -d /tmp/microdados > /dev/null 2>&1"
+        bash_command=f"unzip -o /tmp/{CENSO_FILE}.zip -d /tmp/microdados > /dev/null"
     )
 
     filter_files = BashOperator(
@@ -49,4 +54,17 @@ with DAG(
         }
     )
 
-    download_file >> unzip_file >> filter_files >> load_to_hdfs
+    parse_data = SparkSubmitOperator(
+        task_id="parse_data",
+        spark_binary="spark-submit",
+        application=f"{hdfs_conn()}/spark/scripts/transform.py",
+        conn_id='spark',
+        application_args=[
+            '--database', 'censo',
+            '--table', 'alunos' ,
+            '--csv-path', '/spark/data/matriculas',
+            '--dwh-table-path', f"{hdfs_conn()}/user/hive/warehouse/censo"
+        ]
+    )
+
+    download_file >> unzip_file >> filter_files >> load_to_hdfs >> parse_data

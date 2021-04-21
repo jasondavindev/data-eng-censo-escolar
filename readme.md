@@ -11,10 +11,10 @@
 
 ### Pontos de melhoria
 
-- Adicionar dag no Apache Airflow para fazer a extração e carregamento dos dados no HDFS
 - Subir o dado bruto total para reprocessamento
-- Dependendo da demanda, frequência e criticidade para geração do relatório substituir o Trino por Apache Hive, assim, _suportará maior carga de dados a ser processado_ porém terá um tempo de processamento maior, por usar MapReduce (in disk)
-- Alterar a camada de storage (HDFS) por um serviço gerenciado que ainda mantenha a compatibilidade com as ferramentas utilizadas, por exemplo, AWS S3
+- Com o aumento do volume de dados e da frequência da geração de relatórios, substituir o Trino por Apache Hive, assim, **suportará maior carga de dados a ser processado** porém terá um tempo de processamento maior, por usar MapReduce (in disk)
+- **Com o aumento do volume de dados**, substituir a camada de armazenamento para um Object Storage em nuvem, por exemplo, AWS S3. Isso minimiza a responsabilidade de gerenciamento e tem um escalonamento de disco de forma "orgânica"
+- Repensar a forma com que os dados estão particionados
 
 Observação: das tecnologias utilizadas, leva-se em conta migrar para um ambiente gerenciado a fim de minimizar preocupações com infra-estrutura.
 
@@ -48,35 +48,14 @@ Em todos os componentes, há um arquivo `docker-compose.yml` que facilita subir 
 Para facilitar, listado os passos para subir o ambiente:
 
 ```bash
-# Baixe o arquivo do Censo Escolar
-# Extraia os arquivos CSV
-# Suba os containers do HDFS
 cd hdfs && docker-compose up
-
-# Mova os arquivos necessários (MATRICULA_*) para dentro do container
-docker cp pasta_arquivos_matricula namenode:/tmp/matricula
-
-# Crie as pastas necessárias
-cd hdfs && make mkdir dir=/spark/data/matricula flags="-p"; \
-make mkdir dir=/user/hive/warehouse flags="-p"; \
-make mkdir dir=/tmp
-
-# Mova os arquivos para dentro do HDFS
-cd hdfs && make cpFromLocal source=/tmp/matricula target=/spark/data/
-
-# Suba os outros components
 cd hive && docker-compose up hive-metastore
 cd spark && docker-compose up
 cd trino && docker-compose up
-
-# Importe o script spark para dentro do HDFS
-cd spark && make import_script file=pasta_do_projeto/spark/transform.py
-
-# Execute o script spark
-cd spark && make run_script script=transform.py  args="--database=censo --table=alunos --csv-path=/spark/data/matricula --dwh-table-path=hdfs://namenode:8020/user/hive/warehouse/censo"
-
-# Abra o SQLPad para executar as consultas no Trino
-# Rota http://localhost:3000
+cd airflow && docker-compose up
 ```
 
-Observação: no resultado da segunda consulta, mantive os códigos identificadores pois não encontrei uma correlação na documentação fornecida.
+- Mova o arquivo `airflow/dags/censo_dag.py` para a respectiva pasta de dags no projeto `open-dataplatform`
+- Navegue na rota http://localhost:9090 e habilite a execução da dag `censo_escolar`
+- Após a execução completa da dag, navegue pela rota http://localhost:3000
+- Execute as queries que estão na pasta `trino`

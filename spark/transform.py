@@ -6,8 +6,7 @@ parser = argparse.ArgumentParser(description="Parse Censo data")
 
 parser.add_argument('--database', required=True)
 parser.add_argument('--table', required=True)
-parser.add_argument('--csv-path', required=True)  # /spark/data/matricula/
-# hdfs://namenode:8020/user/hive/warehouse/censo
+parser.add_argument('--csv-path', required=True)
 parser.add_argument('--dwh-table-path', required=True)
 args = parser.parse_args()
 
