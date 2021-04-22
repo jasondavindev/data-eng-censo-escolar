@@ -48,9 +48,9 @@ Em todos os componentes, há um arquivo `docker-compose.yml` que facilita subir 
 Para facilitar, listado os passos para subir o ambiente:
 
 ```bash
-cd hdfs && docker-compose up
+cd hdfs && docker-compose up && make mkdir dir=/spark/data flags="-p"
 cd hive && docker-compose up hive-metastore
-cd spark && docker-compose up && make import_script file=/path/para/arquivo/spark/transform.py # importe o arquivo para HDFS
+cd spark && docker-compose up
 cd trino && docker-compose up
 cd airflow && docker-compose up
 ```

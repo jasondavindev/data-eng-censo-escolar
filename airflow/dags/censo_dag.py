@@ -3,7 +3,7 @@ from airflow.models import DAG
 from airflow.operators.bash import BashOperator
 from airflow.hooks.webhdfs_hook import WebHDFSHook
 from airflow.operators.python_operator import PythonOperator
-from airflow.contrib.operators.spark_submit_operator import SparkSubmitOperator
+from dataplatform.operators.spark.docker_spark_submit_operator import DockerSparkSubmitOperator
 from airflow.hooks.base_hook import BaseHook
 
 CENSO_FILE = "microdados_censo_escolar_2020"
@@ -49,15 +49,14 @@ with DAG(
         task_id="load_to_hdfs",
         python_callable=load_file,
         op_kwargs={
-            'destination': '/spark/data/',
+            'destination': '/spark/data/matriculas',
             'source': '/tmp/matriculas'
         }
     )
 
-    parse_data = SparkSubmitOperator(
+    parse_data = DockerSparkSubmitOperator(
         task_id="parse_data",
-        spark_binary="spark-submit",
-        application=f"{hdfs_conn()}/spark/scripts/transform.py",
+        application="/spark/scripts/transform.py",
         conn_id='spark',
         application_args=[
             '--database', 'censo',
